@@ -57,6 +57,19 @@ const ETF_LIBRARY = [
   ['GLD', 'SPDR Gold Shares', 'gold', ['commodity'], { alternatives: 1 }, { International: 0.6, 'United States': 0.4 }, { Commodities: 1 }],
   ['IAU', 'iShares Gold Trust', 'gold', ['commodity'], { alternatives: 1 }, { International: 0.6, 'United States': 0.4 }, { Commodities: 1 }],
   ['TIP', 'iShares TIPS Bond ETF', 'inflation-protected-bonds', ['bond-core'], { bonds: 1 }, { 'United States': 1 }, { Bonds: 1 }],
+  ['BIL', 'SPDR Bloomberg 1-3 Month T-Bill ETF', 'ultra-short-treasury', ['bond-core', 'cash-equivalent'], { cash: 0.75, bonds: 0.25 }, { 'United States': 1 }, { Bonds: 1 }],
+  ['SGOV', 'iShares 0-3 Month Treasury Bond ETF', 'ultra-short-treasury', ['bond-core', 'cash-equivalent'], { cash: 0.75, bonds: 0.25 }, { 'United States': 1 }, { Bonds: 1 }],
+  ['SHY', 'iShares 1-3 Year Treasury Bond ETF', 'short-duration-bonds', ['bond-core'], { bonds: 1 }, { 'United States': 1 }, { Bonds: 1 }],
+  ['ACWI', 'iShares MSCI ACWI ETF', 'global-total-market', ['all-equity-broad-market', 'core'], { equities: 1 }, { 'United States': 0.62, International: 0.38 }, { Technology: 0.24, Financials: 0.16, Industrials: 0.11, ConsumerDiscretionary: 0.1, Healthcare: 0.1, CommunicationServices: 0.08, ConsumerStaples: 0.07, Energy: 0.05, Materials: 0.04, Utilities: 0.03, RealEstate: 0.02 }],
+  ['EFA', 'iShares MSCI EAFE ETF', 'international-developed', ['international-core'], { equities: 1 }, { International: 0.97, 'United States': 0.03 }, { Financials: 0.2, Industrials: 0.16, Healthcare: 0.11, ConsumerDiscretionary: 0.11, Technology: 0.1, ConsumerStaples: 0.09, Materials: 0.08, Energy: 0.06, CommunicationServices: 0.04, Utilities: 0.03, RealEstate: 0.02 }],
+  ['EEM', 'iShares MSCI Emerging Markets ETF', 'emerging-markets', ['international-core'], { equities: 1 }, { International: 0.99, 'United States': 0.01 }, { Technology: 0.24, Financials: 0.21, ConsumerDiscretionary: 0.14, CommunicationServices: 0.1, Industrials: 0.08, Materials: 0.07, ConsumerStaples: 0.06, Energy: 0.05, Healthcare: 0.04, Utilities: 0.01 }],
+  ['IWF', 'iShares Russell 1000 Growth ETF', 'us-growth-style', ['growth-etf', 'thematic-etf'], { equities: 1 }, { 'United States': 0.98, International: 0.02 }, { Technology: 0.44, CommunicationServices: 0.14, ConsumerDiscretionary: 0.14, Healthcare: 0.09, Industrials: 0.06, Financials: 0.05, ConsumerStaples: 0.03, Energy: 0.02, Utilities: 0.01, Materials: 0.01, RealEstate: 0.01 }],
+  ['SOXX', 'iShares Semiconductor ETF', 'semiconductor-theme', ['sector-etf', 'thematic-etf', 'growth-etf'], { equities: 1 }, { 'United States': 0.85, International: 0.15 }, { Technology: 1 }],
+  ['SMH', 'VanEck Semiconductor ETF', 'semiconductor-theme', ['sector-etf', 'thematic-etf', 'growth-etf'], { equities: 1 }, { 'United States': 0.83, International: 0.17 }, { Technology: 1 }],
+  ['ARKK', 'ARK Innovation ETF', 'innovation-theme', ['thematic-etf', 'growth-etf'], { equities: 1 }, { 'United States': 0.9, International: 0.1 }, { Technology: 0.42, Healthcare: 0.22, CommunicationServices: 0.12, ConsumerDiscretionary: 0.12, Industrials: 0.07, Financials: 0.05 }],
+  ['IBIT', 'iShares Bitcoin Trust ETF', 'bitcoin-theme', ['thematic-etf', 'crypto-etf'], { alternatives: 1 }, { International: 1 }, { Crypto: 1 }],
+  ['FBTC', 'Fidelity Wise Origin Bitcoin Fund', 'bitcoin-theme', ['thematic-etf', 'crypto-etf'], { alternatives: 1 }, { International: 1 }, { Crypto: 1 }],
+  ['ETHA', 'iShares Ethereum Trust ETF', 'ethereum-theme', ['thematic-etf', 'crypto-etf'], { alternatives: 1 }, { International: 1 }, { Crypto: 1 }],
   ['CASH', 'Cash', 'cash', ['cash-equivalent'], { cash: 1 }, { 'United States': 1 }, { Cash: 1 }, ['USD', 'MONEY MARKET', 'CASH RESERVE']],
 ];
 
@@ -149,6 +162,17 @@ const STOCK_LIBRARY = [
   ['SE', 'Sea Limited', 'CommunicationServices', 'International'],
 ];
 
+const CRYPTO_LIBRARY = [
+  ['BTC', 'Bitcoin', 'Crypto', 'International', ['BITCOIN', 'XBT']],
+  ['ETH', 'Ethereum', 'Crypto', 'International', ['ETHER']],
+  ['SOL', 'Solana', 'Crypto', 'International'],
+  ['BNB', 'BNB', 'Crypto', 'International'],
+  ['XRP', 'XRP', 'Crypto', 'International'],
+  ['DOGE', 'Dogecoin', 'Crypto', 'International'],
+  ['USDC', 'USD Coin', 'Cash', 'International', ['USD COIN']],
+  ['USDT', 'Tether USD', 'Cash', 'International', ['TETHER']],
+];
+
 function toTitleLabel(value) {
   return String(value || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -164,20 +188,41 @@ function normalizeLookupKey(value) {
     .replace(/[.\-_/]/g, '');
 }
 
+function deriveEtfCategory(strategyGroup, tags = []) {
+  if (tags.includes('cash-equivalent')) return 'cash equivalent';
+  if (tags.includes('bond-core') || strategyGroup.includes('bond')) return 'aggregate bonds';
+  if (tags.includes('dividend')) return 'dividend';
+  if (tags.includes('sector-etf')) return 'sector ETF';
+  if (tags.includes('growth-etf')) return 'tech/growth';
+  if (strategyGroup.includes('us-large-cap') || strategyGroup.includes('us-total-market')) return 'US large cap';
+  if (strategyGroup.includes('global')) return 'global equity';
+  if (strategyGroup.includes('international-developed')) return 'international developed';
+  if (strategyGroup.includes('emerging')) return 'emerging markets';
+  if (tags.includes('international-core')) return 'international equity';
+  if (tags.includes('crypto-etf')) return 'crypto thematic';
+  return 'broad ETF';
+}
+
 function buildMetadataIndexes() {
   const exact = {};
   const normalized = {};
+  const table = [];
 
   ETF_LIBRARY.forEach(([symbol, name, strategyGroup, tags, assetClass, geography, sector, aliases = []]) => {
+    const assetType = symbol === 'CASH' ? 'cash' : tags.includes('bond-core') ? 'bond fund' : 'ETF';
+    const domicile = Object.entries(geography || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
     const entry = {
       symbol,
       name,
       type: symbol === 'CASH' ? 'cash' : 'etf',
+      assetType,
       category: tags.includes('sector-etf') ? 'sector ETF' : tags.includes('bond-core') ? 'bond ETF' : tags.includes('cash-equivalent') ? 'cash' : 'ETF',
+      etfCategory: deriveEtfCategory(strategyGroup, tags),
       strategyGroup,
       tags,
       assetClass,
       geography,
+      domicile,
       sector,
       aliases,
       indexedExposure: tags.includes('broad-us-etf') || tags.includes('all-equity-broad-market'),
@@ -187,6 +232,17 @@ function buildMetadataIndexes() {
     [symbol, name, ...aliases].forEach((alias) => {
       normalized[normalizeLookupKey(alias)] = entry;
     });
+
+    table.push({
+      ticker: symbol,
+      name,
+      assetType,
+      sector: Object.keys(sector || {})[0] || 'Unknown',
+      geography: domicile,
+      etfKind: tags.includes('sector-etf') ? 'sector ETF' : tags.includes('thematic-etf') ? 'thematic ETF' : tags.includes('bond-core') ? 'bond ETF' : tags.includes('cash-equivalent') ? 'cash equivalent' : 'broad ETF',
+      etfCategory: deriveEtfCategory(strategyGroup, tags),
+      matchCoverage: 'exact + normalized',
+    });
   });
 
   STOCK_LIBRARY.forEach(([symbol, name, sector, geography, aliases = []]) => {
@@ -194,11 +250,13 @@ function buildMetadataIndexes() {
       symbol,
       name,
       type: 'stock',
+      assetType: 'stock',
       category: 'single stock',
       strategyGroup: `single-stock-${normalizeLookupKey(symbol)}`,
       tags: ['single-stock'],
       assetClass: { equities: 1 },
       geography: { [geography]: 1 },
+      domicile: geography,
       sector: { [sector]: 1 },
       aliases,
       indexedExposure: geography === 'United States',
@@ -208,12 +266,61 @@ function buildMetadataIndexes() {
     [symbol, name, ...aliases].forEach((alias) => {
       normalized[normalizeLookupKey(alias)] = entry;
     });
+
+    table.push({
+      ticker: symbol,
+      name,
+      assetType: 'stock',
+      sector,
+      geography,
+      etfKind: 'n/a',
+      etfCategory: 'n/a',
+      matchCoverage: 'exact + normalized',
+    });
   });
 
-  return { exact, normalized };
+  CRYPTO_LIBRARY.forEach(([symbol, name, sector, geography, aliases = []]) => {
+    const entry = {
+      symbol,
+      name,
+      type: 'crypto',
+      assetType: 'crypto',
+      category: 'crypto asset',
+      strategyGroup: `crypto-${normalizeLookupKey(symbol)}`,
+      tags: ['crypto-asset'],
+      assetClass: { alternatives: 1 },
+      geography: { [geography]: 1 },
+      domicile: geography,
+      sector: { [sector]: 1 },
+      aliases,
+      indexedExposure: false,
+    };
+
+    exact[symbol] = entry;
+    [symbol, name, ...aliases].forEach((alias) => {
+      normalized[normalizeLookupKey(alias)] = entry;
+    });
+
+    table.push({
+      ticker: symbol,
+      name,
+      assetType: 'crypto',
+      sector,
+      geography,
+      etfKind: 'n/a',
+      etfCategory: 'n/a',
+      matchCoverage: 'exact + normalized',
+    });
+  });
+
+  return { exact, normalized, table: table.sort((a, b) => a.ticker.localeCompare(b.ticker)) };
 }
 
 const SECURITY_INDEXES = buildMetadataIndexes();
+
+function getSecurityMetadataTable() {
+  return SECURITY_INDEXES.table;
+}
 
 const state = {
   login: null,
@@ -322,6 +429,99 @@ function classifyStarterBucket(answers) {
   };
 }
 
+const STARTER_OPTION_LIBRARY = {
+  'short-term-investor': [
+    {
+      title: 'Option 1: Simplest option',
+      focus: 'Focus on preserving capital rather than growth.',
+      allocationLines: [
+        'High-interest savings / cash equivalents.',
+        'Short-term bond ETF (e.g., ZAG or BND).',
+      ],
+      examples: 'Examples: ZAG, BND.',
+    },
+    {
+      title: 'Option 2: More customizable option',
+      focus: 'Use mostly safer assets with only optional equity exposure.',
+      allocationLines: [
+        '60–80% cash / short-term bonds.',
+        '20–40% broad, stable equity ETF (optional depending on timeline).',
+      ],
+      examples: 'Examples: Bond ETF: ZAG, BND. Equity ETF (small portion): VTI.',
+    },
+  ],
+  'conservative-investor': [
+    {
+      title: 'Option 1: Simplest option',
+      focus: 'Balanced ETF with built-in diversification.',
+      allocationLines: ['Use a one-ticket balanced ETF to keep the portfolio stable and simple.'],
+      examples: 'Examples: VBAL, XBAL.',
+    },
+    {
+      title: 'Option 2: More customizable option',
+      focus: 'Blend equities and bonds with a conservative tilt.',
+      allocationLines: [
+        '40–60% equities.',
+        '40–60% bonds.',
+        'Keep any stock picks very small.',
+      ],
+      examples: 'Examples: Equity ETFs: VFV, XEF. Bond ETFs: ZAG. Optional very small stock sleeve: JNJ, PG, IAU.',
+    },
+  ],
+  'balanced-investor': [
+    {
+      title: 'Option 1: Simplest option',
+      focus: 'One all-in-one ETF.',
+      allocationLines: ['Choose a diversified growth-and-bond mix in one fund.'],
+      examples: 'Examples: VGRO, XGRO.',
+    },
+    {
+      title: 'Option 2: More customizable option',
+      focus: 'Use a balanced split across equities and bonds.',
+      allocationLines: [
+        '60–80% equities.',
+        '20–40% bonds.',
+        'Keep stock tilts small and intentional.',
+      ],
+      examples: 'Examples: US equity: VTI or VFV. International: XEF. Bonds: ZAG. Small stock sleeve: GOOGL, MSFT, PG, IAU.',
+    },
+  ],
+  'growth-investor': [
+    {
+      title: 'Option 1: Simplest option',
+      focus: 'All-equity ETF.',
+      allocationLines: ['Keep the core simple with one global all-equity fund.'],
+      examples: 'Examples: XEQT, VEQT.',
+    },
+    {
+      title: 'Option 2: More customizable option',
+      focus: 'Use a high-equity allocation with regional diversification.',
+      allocationLines: [
+        '80–100% equities.',
+        'Diversify across U.S., international, and emerging markets.',
+      ],
+      examples: 'Examples: US equity: VTI or VOO. International: XEF. Emerging markets: XEC. Stock ideas: GOOGL, MSFT, NVDA, ASML, IAU.',
+    },
+  ],
+  'aggressive-long-term-investor': [
+    {
+      title: 'Option 1: Simplest option',
+      focus: '100% global equity ETF.',
+      allocationLines: ['Use one broad all-equity ETF as the long-term compounding core.'],
+      examples: 'Examples: XEQT, VEQT.',
+    },
+    {
+      title: 'Option 2: More customizable option',
+      focus: 'Very high equity with optional growth/conviction tilts.',
+      allocationLines: [
+        '90–100% equities.',
+        'Heavier tilt toward growth / conviction ideas.',
+      ],
+      examples: 'Examples: Core ETFs: VTI, XEF. Growth ETF tilt: QQQ. Stock/alt ideas: GOOGL, ASML, NVDA, TSLA, BTC.',
+    },
+  ],
+};
+
 function buildStarterPlanSummary(answers) {
   const cash = Number(answers.currentCash || 0);
   const monthly = Number(answers.monthlyAmount || 0);
@@ -331,16 +531,7 @@ function buildStarterPlanSummary(answers) {
   return {
     bucket,
     summary,
-    options: [
-      {
-        title: 'Option 1: Simplest option',
-        description: 'If you want the easiest path, use a single diversified ETF that already holds many companies and regions.',
-      },
-      {
-        title: 'Option 2: More customizable option',
-        description: 'If you want a bit more control, split between U.S. equities, international equities, and bonds/cash if needed.',
-      },
-    ],
+    options: STARTER_OPTION_LIBRARY[bucket.key] || STARTER_OPTION_LIBRARY['balanced-investor'],
     contributionSummary: `You said you can invest ${formatCurrency(monthly)} per month and currently have ${formatCurrency(cash)} available, so a simple repeatable structure matters more than chasing complexity early on.`,
   };
 }
@@ -399,7 +590,11 @@ function renderStarterPlan(plan) {
         ${plan.options.map((option) => `
           <section class="sub-card starter-option-card">
             <h4>${option.title}</h4>
-            <p>${option.description}</p>
+            <p><strong>${option.focus}</strong></p>
+            <ul class="metric-list compact-list">
+              ${option.allocationLines.map((line) => `<li><span>${line}</span></li>`).join('')}
+            </ul>
+            <p>${option.examples}</p>
           </section>
         `).join('')}
       </div>
@@ -447,20 +642,25 @@ function resolveSecurity(symbol, questionnaire = {}) {
   }
 
   const assumedGeography = /UNITED STATES|USA|US/i.test(questionnaire.country || '') ? 'United States' : 'International';
+  const looksLikeCrypto = /(BTC|XBT|ETH|SOL|BNB|XRP|DOGE|USDT|USDC)/i.test(exactSymbol);
   const looksLikeFund = /(ETF|FUND)$/i.test(exactSymbol) || exactSymbol.length > 5;
+  const looksLikeBondFund = /(BOND|TREASURY|TIPS|AGG)/i.test(exactSymbol);
 
   return {
     symbol: exactSymbol || 'UNKNOWN',
     name: exactSymbol || 'Unknown security',
-    type: looksLikeFund ? 'etf' : 'stock',
-    category: looksLikeFund ? 'unclassified fund' : 'unclassified stock',
+    type: looksLikeCrypto ? 'crypto' : looksLikeFund ? 'etf' : 'stock',
+    assetType: looksLikeCrypto ? 'crypto' : looksLikeBondFund ? 'bond fund' : looksLikeFund ? 'ETF' : 'stock',
+    category: looksLikeCrypto ? 'crypto asset' : looksLikeFund ? 'unclassified fund' : 'unclassified stock',
+    etfCategory: looksLikeBondFund ? 'aggregate bonds' : looksLikeFund ? 'broad ETF' : 'n/a',
     strategyGroup: `fallback-${normalizedSymbol || 'unknown'}`,
-    tags: ['fallback-classification'],
-    assetClass: looksLikeFund ? { equities: 1 } : { equities: 1 },
+    tags: looksLikeCrypto ? ['fallback-classification', 'crypto-asset'] : ['fallback-classification'],
+    assetClass: looksLikeCrypto ? { alternatives: 1 } : looksLikeBondFund ? { bonds: 1 } : { equities: 1 },
     geography: { [assumedGeography]: 1 },
-    sector: { Unknown: 1 },
+    domicile: assumedGeography,
+    sector: looksLikeCrypto ? { Crypto: 1 } : { Unknown: 1 },
     aliases: [],
-    indexedExposure: looksLikeFund,
+    indexedExposure: looksLikeFund && !looksLikeCrypto,
     matchLevel: 'fallback',
     inputSymbol: exactSymbol,
   };
@@ -1296,3 +1496,4 @@ analysisForm.addEventListener('submit', (event) => {
 window.parseHoldings = parseHoldings;
 window.analyzePortfolio = analyzePortfolio;
 window.resolveSecurity = resolveSecurity;
+window.getSecurityMetadataTable = getSecurityMetadataTable;
