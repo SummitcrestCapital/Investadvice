@@ -52,6 +52,10 @@
                 required
               />
             </label>
+            <label class="checkbox-label full-width">
+              <input type="checkbox" name="newsletterOptIn" />
+              <span>I would like to sign up for Summitcrest's newsletters to hear about general investing advice and exclusive new features coming to the platform!</span>
+            </label>
             <button type="submit" class="primary-btn">Continue</button>
           </form>
         </section>
@@ -167,6 +171,15 @@
                 Get starter plan
               </button>
             </article>
+            <article class="choice-card">
+              <h3>Profile</h3>
+              <p>
+                View your saved email, questionnaire answers, and newsletter preference from Supabase.
+              </p>
+              <button type="button" class="secondary-btn" data-target="profile-screen">
+                View profile
+              </button>
+            </article>
           </div>
         </section>
 
@@ -208,12 +221,23 @@
           <div id="starter-output" class="result-card"></div>
           <button type="button" class="ghost-btn" data-target="choice-screen">Back</button>
         </section>
+
+        <section class="panel" id="profile-screen" aria-labelledby="profile-title">
+          <div class="panel-header">
+            <h2 id="profile-title">Profile</h2>
+            <p>Your saved account and questionnaire data from Supabase.</p>
+          </div>
+          <p id="profile-status" class="status-copy"></p>
+          <div id="profile-output" class="result-card"></div>
+          <button type="button" class="ghost-btn" data-target="choice-screen">Back</button>
+        </section>
       </main>
       <footer class="site-disclaimer">
         Disclaimer: This tool is for educational and information purposes only. Investadvice can make mistakes and the information presented may be incomplete or inaccurate.
       </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
   </body>
 </html>
