@@ -239,24 +239,172 @@ function formatPercent(value) {
   return `${(Number(value || 0) * 100).toFixed(1)}%`;
 }
 
+function classifyStarterBucket(answers) {
+  const age = Number(answers.age || 0);
+  const horizon = answers.timeHorizon;
+  const risk = answers.riskTolerance;
+  const goal = answers.mainGoal;
+
+  if (horizon === 'less than 3 years' || goal === 'save for big purchase') {
+    return {
+      key: 'short-term-investor',
+      label: 'Short-term investor',
+      style: 'Capital preservation portfolio',
+      styleMessage: 'Your priority is protecting money you may need soon, so growth matters less than stability.',
+      allocation: ['Low equity', 'High cash and/or bonds'],
+      allocationMessage: 'Most of your portfolio should stay in safer assets because you may need the money soon.',
+      investIn: ['High-interest cash', 'Short-term bond exposure', 'Lower-volatility holdings'],
+      avoid: ['Aggressive stocks', 'Concentrated positions'],
+    };
+  }
+
+  if (risk === 'high' && horizon === '7+ years' && goal === 'grow your wealth long term' && age <= 35) {
+    return {
+      key: 'aggressive-long-term-investor',
+      label: 'Aggressive long-term investor',
+      style: 'Simple long-term growth portfolio',
+      styleMessage: 'Your profile supports a mostly equity-based strategy built for long-term compounding.',
+      allocation: ['Very high or full equity exposure', 'Very little cash unless intentionally held'],
+      allocationMessage: 'Your profile supports prioritizing long-term growth over short-term stability.',
+      investIn: ['Broad all-equity ETF', 'A simple combination of U.S. + international equity ETFs'],
+      avoid: ['Large idle cash balances unless intentional', 'Needlessly complex holdings'],
+    };
+  }
+
+  if (risk === 'high' && horizon === '7+ years') {
+    return {
+      key: 'growth-investor',
+      label: 'Growth investor',
+      style: 'Growth-focused ETF portfolio',
+      styleMessage: 'Because you have time and can tolerate volatility, a stock-heavy portfolio likely makes sense.',
+      allocation: ['High equities', 'Little bonds/cash'],
+      allocationMessage: 'Because your time horizon is long, equities can play the main role in your portfolio.',
+      investIn: ['Broad equity ETFs', 'Strong international diversification', 'Little or no bond allocation depending on profile'],
+      avoid: ['Too much idle cash', 'Overly conservative allocations for long-term money'],
+    };
+  }
+
+  if (risk === 'medium' && (horizon === '3-7 years' || horizon === '7+ years')) {
+    return {
+      key: 'balanced-investor',
+      label: 'Balanced investor',
+      style: 'Balanced ETF portfolio',
+      styleMessage: 'A diversified portfolio with both growth and stability may fit you best.',
+      allocation: ['Meaningful equities', 'Moderate bonds/cash'],
+      allocationMessage: 'This is a middle-ground portfolio that aims for growth without being too aggressive.',
+      investIn: ['Broad U.S. equity ETF', 'International equity ETF', 'Bond ETF'],
+      avoid: ['Overconcentration in one asset', 'Overcomplicating the portfolio'],
+    };
+  }
+
+  if (risk === 'low') {
+    return {
+      key: 'conservative-investor',
+      label: 'Conservative investor',
+      style: 'Conservative diversified portfolio',
+      styleMessage: 'You likely need some growth, but with a more stable mix that matches your comfort level.',
+      allocation: ['Moderate equities', 'Meaningful bonds/cash'],
+      allocationMessage: 'This gives you some growth while limiting large swings.',
+      investIn: ['Broad stock ETFs', 'Bond ETFs', 'Simple diversified funds'],
+      avoid: ['Very aggressive allocations', 'Concentrated single-stock positions'],
+    };
+  }
+
+  return {
+    key: 'balanced-investor',
+    label: 'Balanced investor',
+    style: 'Balanced ETF portfolio',
+    styleMessage: 'A diversified portfolio with both growth and stability may fit you best.',
+    allocation: ['Meaningful equities', 'Moderate bonds/cash'],
+    allocationMessage: 'This is a middle-ground portfolio that aims for growth without being too aggressive.',
+    investIn: ['Broad U.S. equity ETF', 'International equity ETF', 'Bond ETF'],
+    avoid: ['Overconcentration in one asset', 'Overcomplicating the portfolio'],
+  };
+}
+
 function buildStarterPlanSummary(answers) {
   const cash = Number(answers.currentCash || 0);
   const monthly = Number(answers.monthlyAmount || 0);
-  const experienceDetail =
-    answers.experience === 'beginner'
-      ? 'You are early in your investing journey, so a simple diversified foundation and repeatable habits matter more than trying to outsmart the market.'
-      : answers.experience === 'some experience'
-        ? 'You already have some experience, which means you can build a more intentional plan while still keeping it easy to maintain.'
-        : 'You have advanced experience, so the best plan is likely one that stays disciplined while still reflecting your convictions.';
+  const bucket = classifyStarterBucket(answers);
+  const summary = `At age ${answers.age} in ${answers.country}, you are investing for ${answers.mainGoal} over a ${answers.timeHorizon} horizon with a ${answers.riskTolerance} risk profile. Because time horizon and risk tolerance matter most, your profile fits the ${bucket.label.toLowerCase()} bucket best.`;
 
-  const riskDetail =
-    answers.riskTolerance === 'low'
-      ? 'A lower risk profile usually fits better with steadier holdings and clear downside protection.'
-      : answers.riskTolerance === 'medium'
-        ? 'A medium risk profile usually works best with a balanced mix of growth assets and stabilizers.'
-        : 'A high risk profile gives you room to own more growth assets if they truly match your time horizon and comfort level.';
+  return {
+    bucket,
+    summary,
+    options: [
+      {
+        title: 'Option 1: Simplest option',
+        description: 'If you want the easiest path, use a single diversified ETF that already holds many companies and regions.',
+      },
+      {
+        title: 'Option 2: More customizable option',
+        description: 'If you want a bit more control, split between U.S. equities, international equities, and bonds/cash if needed.',
+      },
+    ],
+    contributionSummary: `You said you can invest ${formatCurrency(monthly)} per month and currently have ${formatCurrency(cash)} available, so a simple repeatable structure matters more than chasing complexity early on.`,
+  };
+}
 
-  return `At age ${answers.age} in ${answers.country}, you are investing for ${answers.mainGoal} over a ${answers.timeHorizon} horizon. ${experienceDetail} ${riskDetail} With ${formatCurrency(monthly)} available to invest monthly and ${formatCurrency(cash)} available today, your starter plan should emphasize broad diversification, a simple core lineup, and a steady contribution habit so your plan stays aligned with your biggest concern: ${answers.worry}.`;
+function renderStarterPlan(plan) {
+  return `
+    <div class="starter-stack">
+      <section class="report-banner">
+        <div>
+          <p class="eyebrow small">Getting started investing</p>
+          <h3>${plan.bucket.label}</h3>
+          <p>${plan.summary}</p>
+        </div>
+        <div class="report-banner-meta">
+          <span>${plan.bucket.style}</span>
+        </div>
+      </section>
+
+      <section class="sub-card">
+        <h4>Recommended style</h4>
+        <p><strong>${plan.bucket.style}</strong></p>
+        <p>${plan.bucket.styleMessage}</p>
+      </section>
+
+      <div class="breakdown-grid">
+        <section class="sub-card">
+          <h4>Suggested allocation</h4>
+          <ul class="metric-list compact-list">
+            ${plan.bucket.allocation.map((item) => `<li><span>${item}</span></li>`).join('')}
+          </ul>
+          <p>${plan.bucket.allocationMessage}</p>
+        </section>
+        <section class="sub-card">
+          <h4>Profile fit</h4>
+          <p>${plan.contributionSummary}</p>
+          <p>Your biggest driver here is the combination of <strong>${plan.bucket.label.toLowerCase()}</strong> characteristics, especially your time horizon and risk tolerance.</p>
+        </section>
+      </div>
+
+      <div class="breakdown-grid">
+        <section class="sub-card">
+          <h4>What to invest in</h4>
+          <ul class="metric-list compact-list">
+            ${plan.bucket.investIn.map((item) => `<li><span>${item}</span></li>`).join('')}
+          </ul>
+        </section>
+        <section class="sub-card">
+          <h4>What not to lean on</h4>
+          <ul class="metric-list compact-list">
+            ${plan.bucket.avoid.map((item) => `<li><span>${item}</span></li>`).join('')}
+          </ul>
+        </section>
+      </div>
+
+      <div class="breakdown-grid">
+        ${plan.options.map((option) => `
+          <section class="sub-card starter-option-card">
+            <h4>${option.title}</h4>
+            <p>${option.description}</p>
+          </section>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function parseHoldings(holdingsText) {
@@ -1109,7 +1257,7 @@ questionnaireForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const formData = new FormData(questionnaireForm);
   state.questionnaire = Object.fromEntries(formData.entries());
-  starterOutput.textContent = buildStarterPlanSummary(state.questionnaire);
+  starterOutput.innerHTML = renderStarterPlan(buildStarterPlanSummary(state.questionnaire));
   analysisOutput.classList.add('hidden');
   analysisOutput.innerHTML = '';
   showScreen('choice-screen');
@@ -1119,7 +1267,7 @@ document.querySelectorAll('[data-target]').forEach((button) => {
   button.addEventListener('click', () => {
     const target = button.dataset.target;
     if (target === 'starter-screen' && state.questionnaire) {
-      starterOutput.textContent = buildStarterPlanSummary(state.questionnaire);
+      starterOutput.innerHTML = renderStarterPlan(buildStarterPlanSummary(state.questionnaire));
     }
     showScreen(target);
   });
