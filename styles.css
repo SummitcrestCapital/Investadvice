@@ -76,8 +76,8 @@ body {
 }
 
 .eyebrow {
-  text-transform: lowercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0.04em;
   font-size: 1.05rem;
   font-weight: 700;
   color: #1f5f97;
@@ -98,9 +98,9 @@ body {
 
 .brand-sub {
   margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: none;
   color: #5f7e9f;
 }
 
@@ -499,4 +499,16 @@ button:hover {
   .pie-chart {
     width: 150px;
   }
+}
+
+
+.site-disclaimer {
+  margin-top: 1.6rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(33, 95, 158, 0.25);
+  background: rgba(255, 255, 255, 0.78);
+  color: #4f6f94;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
