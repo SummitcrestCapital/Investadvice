@@ -20,8 +20,8 @@
             </svg>
           </div>
           <div>
-            <p class="eyebrow">Investadvice</p>
-            <p class="brand-sub">By Summitcrest</p>
+            <p class="eyebrow">Summitcrest</p>
+            <p class="brand-sub">Investadvice</p>
           </div>
         </div>
         <h1>Simple investing guidance tailored to you.</h1>
@@ -35,9 +35,14 @@
         <section class="panel active" id="login-screen" aria-labelledby="login-title">
           <div class="panel-header">
             <h2 id="login-title">Log in</h2>
-            <p>Use your email and password to continue.</p>
+            <p>Choose log in if you already have an account, or create account to complete the questionnaire once.</p>
           </div>
           <form id="login-form" class="form-grid">
+            <div class="auth-mode-toggle full-width" role="radiogroup" aria-label="Account mode">
+              <button type="button" class="secondary-btn auth-mode-btn active" data-auth-mode="login">Log in</button>
+              <button type="button" class="secondary-btn auth-mode-btn" data-auth-mode="create">Create account</button>
+              <input type="hidden" name="authMode" value="login" />
+            </div>
             <label>
               Email
               <input type="email" name="email" placeholder="you@example.com" required />
@@ -58,6 +63,7 @@
             </label>
             <button type="submit" class="primary-btn">Continue</button>
           </form>
+          <p id="login-status" class="status-copy"></p>
         </section>
 
         <section class="panel" id="questionnaire-screen" aria-labelledby="questionnaire-title">
@@ -151,6 +157,7 @@
             <h2 id="choice-title">Choose your next step</h2>
             <p>Pick the experience that fits what you want to do today.</p>
           </div>
+          <button type="button" class="corner-icon-btn" data-target="profile-screen" aria-label="View profile">👤</button>
           <div class="option-grid">
             <article class="choice-card">
               <h3>Analyze portfolio</h3>
@@ -169,15 +176,6 @@
               </p>
               <button type="button" class="secondary-btn" data-target="starter-screen">
                 Get starter plan
-              </button>
-            </article>
-            <article class="choice-card">
-              <h3>Profile</h3>
-              <p>
-                View your saved email, questionnaire answers, and newsletter preference from Supabase.
-              </p>
-              <button type="button" class="secondary-btn" data-target="profile-screen">
-                View profile
               </button>
             </article>
           </div>
