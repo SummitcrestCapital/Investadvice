@@ -7,6 +7,7 @@ const analysisOutput = document.getElementById('analysis-output');
 const profileOutput = document.getElementById('profile-output');
 const profileStatus = document.getElementById('profile-status');
 const loginStatus = document.getElementById('login-status');
+const newsletterOptInField = document.getElementById('newsletter-opt-in-field');
 
 const SUPABASE_URL = window.SUPABASE_URL || 'https://aormwwpaulpcvkezcamh.supabase.co';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_I2XKUAvXUVT12E7rYnEOtw_2g9zdKzh';
@@ -189,6 +190,14 @@ function toTitleLabel(value) {
     .replace(/\bEtf\b/g, 'ETF')
     .replace(/\bUs\b/g, 'U.S.')
     .trim();
+}
+
+function toUppercaseLeadingWords(value) {
+  return String(value || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 function normalizeLookupKey(value) {
@@ -429,17 +438,32 @@ function renderProfileData(profileRow) {
         <ul class="metric-list compact-list">
           <li><span>Email: ${profileRow.email || 'N/A'}</span></li>
           <li><span>Password: ${profileRow.password || 'N/A'}</span></li>
-          <li><span>Newsletter opt-in: ${profileRow.newsletter_opt_in ? 'Yes' : 'No'}</span></li>
+          <li><span>Newsletter Opt-In: ${profileRow.newsletter_opt_in ? 'Yes' : 'No'}</span></li>
         </ul>
       </section>
       <section class="sub-card">
         <h4>Questionnaire answers</h4>
         <ul class="metric-list compact-list">
-          ${Object.entries(questionnaire).map(([key, value]) => `<li><span>${toTitleLabel(key)}: ${value}</span></li>`).join('')}
+          ${Object.entries(questionnaire).map(([key, value]) => `<li><span>${toUppercaseLeadingWords(toTitleLabel(key))}: ${toUppercaseLeadingWords(value)}</span></li>`).join('')}
         </ul>
       </section>
     </div>
   `;
+}
+
+function setAuthModeUI(mode) {
+  if (!newsletterOptInField) {
+    return;
+  }
+  const newsletterCheckbox = newsletterOptInField.querySelector('input[name="newsletterOptIn"]');
+  const shouldShowNewsletter = mode === 'create';
+  newsletterOptInField.classList.toggle('hidden', !shouldShowNewsletter);
+  if (newsletterCheckbox) {
+    newsletterCheckbox.disabled = !shouldShowNewsletter;
+    if (!shouldShowNewsletter) {
+      newsletterCheckbox.checked = false;
+    }
+  }
 }
 
 async function saveProfileToSupabase() {
@@ -1731,8 +1755,11 @@ document.querySelectorAll('[data-auth-mode]').forEach((button) => {
     document.querySelectorAll('[data-auth-mode]').forEach((candidate) => {
       candidate.classList.toggle('active', candidate === button);
     });
+    setAuthModeUI(mode);
   });
 });
+
+setAuthModeUI('login');
 
 analysisForm.addEventListener('submit', (event) => {
   event.preventDefault();
