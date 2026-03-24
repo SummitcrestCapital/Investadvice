@@ -338,6 +338,83 @@ const state = {
   portfolio: null,
 };
 
+const profileSchemaState = {
+  resolved: false,
+  columns: {
+    email: null,
+    password: null,
+    newsletterOptIn: null,
+    questionnaire: null,
+  },
+};
+
+const PROFILE_COLUMN_CANDIDATES = {
+  email: ['email', 'user_email', 'username'],
+  password: ['password', 'user_password', 'passcode'],
+  newsletterOptIn: ['newsletter_opt_in', 'newsletter', 'marketing_opt_in'],
+  questionnaire: ['questionnaire', 'questionnaire_answers', 'answers_json'],
+};
+
+function isMissingColumnError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('does not exist') && message.includes('column');
+}
+
+async function columnExists(columnName) {
+  const { error } = await supabaseClient
+    .from('user_profiles')
+    .select(columnName)
+    .limit(1);
+  if (!error) {
+    return true;
+  }
+  if (isMissingColumnError(error)) {
+    return false;
+  }
+  throw error;
+}
+
+async function resolveUserProfileColumns() {
+  if (!supabaseClient) {
+    return null;
+  }
+  if (profileSchemaState.resolved) {
+    return profileSchemaState.columns;
+  }
+
+  const resolvedColumns = { ...profileSchemaState.columns };
+  for (const [logicalField, candidates] of Object.entries(PROFILE_COLUMN_CANDIDATES)) {
+    for (const candidate of candidates) {
+      try {
+        const exists = await columnExists(candidate);
+        if (exists) {
+          resolvedColumns[logicalField] = candidate;
+          break;
+        }
+      } catch (error) {
+        profileStatus.textContent = `Supabase schema check failed: ${error.message}`;
+        return null;
+      }
+    }
+  }
+
+  profileSchemaState.resolved = true;
+  profileSchemaState.columns = resolvedColumns;
+  return resolvedColumns;
+}
+
+function normalizeProfileRow(profileRow, columns) {
+  if (!profileRow) {
+    return null;
+  }
+  return {
+    email: columns.email ? profileRow[columns.email] : null,
+    password: columns.password ? profileRow[columns.password] : null,
+    newsletter_opt_in: columns.newsletterOptIn ? profileRow[columns.newsletterOptIn] : false,
+    questionnaire: columns.questionnaire ? profileRow[columns.questionnaire] : {},
+  };
+}
+
 function renderProfileData(profileRow) {
   if (!profileRow) {
     profileOutput.innerHTML = '<p>No profile data has been saved yet.</p>';
@@ -370,14 +447,25 @@ async function saveProfileToSupabase() {
     return;
   }
 
+  const columns = await resolveUserProfileColumns();
+  if (!columns?.email || !columns?.password) {
+    profileStatus.textContent = 'Supabase save skipped: expected email/password columns were not found in user_profiles.';
+    return;
+  }
+
   const payload = {
-    email: state.login.email,
-    password: state.login.password,
-    newsletter_opt_in: Boolean(state.login.newsletterOptIn),
-    questionnaire: state.questionnaire,
+    [columns.email]: state.login.email,
+    [columns.password]: state.login.password,
   };
 
-  const { error } = await supabaseClient.from('user_profiles').upsert(payload, { onConflict: 'email' });
+  if (columns.newsletterOptIn) {
+    payload[columns.newsletterOptIn] = Boolean(state.login.newsletterOptIn);
+  }
+  if (columns.questionnaire) {
+    payload[columns.questionnaire] = state.questionnaire;
+  }
+
+  const { error } = await supabaseClient.from('user_profiles').upsert(payload, { onConflict: columns.email });
   if (error) {
     profileStatus.textContent = `Supabase save error: ${error.message}`;
     return;
@@ -391,11 +479,17 @@ async function loginExistingUser(email, password) {
     return false;
   }
 
+  const columns = await resolveUserProfileColumns();
+  if (!columns?.email || !columns?.password) {
+    loginStatus.textContent = 'Supabase login is unavailable: expected email/password columns were not found in user_profiles.';
+    return false;
+  }
+
   const { data, error } = await supabaseClient
     .from('user_profiles')
     .select('*')
-    .eq('email', email)
-    .eq('password', password)
+    .eq(columns.email, email)
+    .eq(columns.password, password)
     .maybeSingle();
 
   if (error) {
@@ -407,13 +501,14 @@ async function loginExistingUser(email, password) {
     return false;
   }
 
+  const normalizedData = normalizeProfileRow(data, columns);
   state.login = {
-    email: data.email,
-    password: data.password,
-    newsletterOptIn: Boolean(data.newsletter_opt_in),
+    email: normalizedData.email,
+    password: normalizedData.password,
+    newsletterOptIn: Boolean(normalizedData.newsletter_opt_in),
     authMode: 'login',
   };
-  state.questionnaire = data.questionnaire || null;
+  state.questionnaire = normalizedData.questionnaire || null;
   if (state.questionnaire) {
     starterOutput.innerHTML = renderStarterPlan(buildStarterPlanSummary(state.questionnaire));
   }
@@ -438,10 +533,17 @@ async function loadProfileFromSupabase() {
     return;
   }
 
+  const columns = await resolveUserProfileColumns();
+  if (!columns?.email) {
+    profileStatus.textContent = 'Supabase load skipped: expected email column was not found in user_profiles.';
+    renderProfileData(null);
+    return;
+  }
+
   const { data, error } = await supabaseClient
     .from('user_profiles')
     .select('*')
-    .eq('email', state.login.email)
+    .eq(columns.email, state.login.email)
     .maybeSingle();
 
   if (error) {
@@ -451,7 +553,7 @@ async function loadProfileFromSupabase() {
   }
 
   profileStatus.textContent = data ? 'Loaded profile from Supabase.' : 'No profile found in Supabase yet.';
-  renderProfileData(data);
+  renderProfileData(normalizeProfileRow(data, columns));
 }
 
 function showScreen(screenId) {
