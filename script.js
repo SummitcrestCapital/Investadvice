@@ -6,12 +6,12 @@ const starterOutput = document.getElementById('starter-output');
 const analysisOutput = document.getElementById('analysis-output');
 const profileOutput = document.getElementById('profile-output');
 const profileStatus = document.getElementById('profile-status');
+const loginStatus = document.getElementById('login-status');
 
 const SUPABASE_URL = window.SUPABASE_URL || 'https://aormwwpaulpcvkezcamh.supabase.co';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_I2XKUAvXUVT12E7rYnEOtw_2g9zdKzh';
 const supabaseClient = window.supabase?.createClient &&
-  !SUPABASE_URL.includes('YOUR_PROJECT') &&
-  !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')
+  !SUPABASE_URL.includes('YOUR_PROJECT')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
@@ -383,6 +383,42 @@ async function saveProfileToSupabase() {
     return;
   }
   profileStatus.textContent = 'Profile data saved to Supabase.';
+}
+
+async function loginExistingUser(email, password) {
+  if (!supabaseClient) {
+    loginStatus.textContent = 'Supabase is not available in this browser session.';
+    return false;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('user_profiles')
+    .select('*')
+    .eq('email', email)
+    .eq('password', password)
+    .maybeSingle();
+
+  if (error) {
+    loginStatus.textContent = `Log in failed: ${error.message}`;
+    return false;
+  }
+  if (!data) {
+    loginStatus.textContent = 'No matching account found. Try create account if you are new.';
+    return false;
+  }
+
+  state.login = {
+    email: data.email,
+    password: data.password,
+    newsletterOptIn: Boolean(data.newsletter_opt_in),
+    authMode: 'login',
+  };
+  state.questionnaire = data.questionnaire || null;
+  if (state.questionnaire) {
+    starterOutput.innerHTML = renderStarterPlan(buildStarterPlanSummary(state.questionnaire));
+  }
+  loginStatus.textContent = 'Welcome back. Loaded your saved profile and skipped the questionnaire.';
+  return true;
 }
 
 async function loadProfileFromSupabase() {
@@ -1536,13 +1572,26 @@ function renderPortfolioAnalysis(analysis) {
   `;
 }
 
-loginForm.addEventListener('submit', (event) => {
+loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
-  state.login = {
+  const loginData = {
     ...Object.fromEntries(formData.entries()),
     newsletterOptIn: formData.get('newsletterOptIn') === 'on',
   };
+  const mode = loginData.authMode || 'login';
+  loginStatus.textContent = '';
+
+  if (mode === 'login') {
+    const success = await loginExistingUser(loginData.email, loginData.password);
+    if (success) {
+      showScreen('choice-screen');
+    }
+    return;
+  }
+
+  state.login = loginData;
+  loginStatus.textContent = 'Creating a new account. Please complete the questionnaire once.';
   showScreen('questionnaire-screen');
 });
 
@@ -1567,6 +1616,19 @@ document.querySelectorAll('[data-target]').forEach((button) => {
       await loadProfileFromSupabase();
     }
     showScreen(target);
+  });
+});
+
+document.querySelectorAll('[data-auth-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.authMode;
+    const modeInput = loginForm.querySelector('input[name="authMode"]');
+    if (modeInput) {
+      modeInput.value = mode;
+    }
+    document.querySelectorAll('[data-auth-mode]').forEach((candidate) => {
+      candidate.classList.toggle('active', candidate === button);
+    });
   });
 });
 
