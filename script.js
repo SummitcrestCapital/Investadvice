@@ -7,7 +7,6 @@ const analysisOutput = document.getElementById('analysis-output');
 const profileOutput = document.getElementById('profile-output');
 const profileStatus = document.getElementById('profile-status');
 const loginStatus = document.getElementById('login-status');
-const newsletterOptInField = document.getElementById('newsletter-opt-in-field');
 
 const SUPABASE_URL = window.SUPABASE_URL || 'https://aormwwpaulpcvkezcamh.supabase.co';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_I2XKUAvXUVT12E7rYnEOtw_2g9zdKzh';
@@ -452,17 +451,24 @@ function renderProfileData(profileRow) {
 }
 
 function setAuthModeUI(mode) {
-  if (!newsletterOptInField) {
+  const existingField = loginForm.querySelector('#newsletter-opt-in-field');
+  const shouldShowNewsletter = mode === 'create';
+
+  if (shouldShowNewsletter && !existingField) {
+    const newsletterField = document.createElement('label');
+    newsletterField.id = 'newsletter-opt-in-field';
+    newsletterField.className = 'checkbox-label full-width';
+    newsletterField.innerHTML = `
+      <input type="checkbox" name="newsletterOptIn" />
+      <span>I would like to sign up for Summitcrest's newsletters to hear about general investing advice and exclusive new features coming to the platform!</span>
+    `;
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+    loginForm.insertBefore(newsletterField, submitButton || null);
     return;
   }
-  const newsletterCheckbox = newsletterOptInField.querySelector('input[name="newsletterOptIn"]');
-  const shouldShowNewsletter = mode === 'create';
-  loginForm.classList.toggle('create-mode', shouldShowNewsletter);
-  if (newsletterCheckbox) {
-    newsletterCheckbox.disabled = !shouldShowNewsletter;
-    if (!shouldShowNewsletter) {
-      newsletterCheckbox.checked = false;
-    }
+
+  if (!shouldShowNewsletter && existingField) {
+    existingField.remove();
   }
 }
 
